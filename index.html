@@ -48,6 +48,8 @@
       installButton.style.display = 'none';
     });
 window.addEventListener('message', async (event) => {
+  alert('Команда установки получена');
+  
   if (!event.data || event.data.type !== 'TRAINER_PWA_INSTALL') return;
 
   const isInstalled =
