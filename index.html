@@ -55,20 +55,14 @@ window.addEventListener('message', async (event) => {
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
 
-  if (isInstalled) {
-    alert('Ярлык уже установлен');
-    return;
-  }
+ if (isInstalled || !deferredPrompt) {
+  alert('Ярлык уже установлен');
+  return;
+}
 
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    return;
-  }
-
-  alert('Установка ярлыка сейчас недоступна. Откройте меню браузера и выберите «Установить приложение».');
-});
+deferredPrompt.prompt();
+await deferredPrompt.userChoice;
+deferredPrompt = null;
     
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
