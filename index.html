@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="ru">
 <head>
@@ -49,28 +50,133 @@
     #install:hover {
       background: #a00000;
     }
+
+    #installPage {
+      display: none;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .installBox {
+      width: 100%;
+      max-width: 430px;
+      padding: 32px 24px;
+      text-align: center;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.12);
+      box-sizing: border-box;
+    }
+
+    .installIcon {
+      width: 96px;
+      height: 96px;
+      margin-bottom: 20px;
+      border-radius: 22px;
+    }
+
+    .installBox h1 {
+      margin: 0 0 12px;
+      font-size: 26px;
+    }
+
+    .installBox p {
+      margin: 0 0 24px;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #666;
+    }
+
+    #installPageButton {
+      width: 100%;
+      padding: 15px 20px;
+      border: 0;
+      border-radius: 12px;
+      background: #800000;
+      color: white;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #installPageButton:hover {
+      background: #a00000;
+    }
+
+    #installStatus {
+      margin-top: 18px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 
 <body>
 
+  <!-- Обычная страница теста -->
   <iframe
+    id="testFrame"
     src="https://script.google.com/macros/s/AKfycbweG0jamDG8Sc1KPuHJrZQr-xSJzoBAMt__-chg6GE0SDl6EJHz6DhRbh9ckCJpRG_eTA/exec"
     title="Тренажер тестов"
     allow="fullscreen">
   </iframe>
 
+  <!-- Кнопка установки на обычной странице PWA -->
   <button id="install">
     Установить приложение
   </button>
 
+  <!-- Специальная страница установки -->
+  <div id="installPage">
+
+    <div class="installBox">
+
+      <img
+        class="installIcon"
+        src="icons/icon-192.png"
+        alt="Тренажер тестов"
+      >
+
+      <h1>Тренажер тестов</h1>
+
+      <p id="installDescription">
+        Установите приложение, чтобы открывать тест
+        прямо с рабочего стола.
+      </p>
+
+      <button id="installPageButton">
+        Установить приложение
+      </button>
+
+      <div id="installStatus"></div>
+
+    </div>
+
+  </div>
+
   <script>
     let deferredPrompt = null;
-    let promptShown = false;
 
-    const installButton = document.getElementById('install');
+    const installButton =
+      document.getElementById('install');
 
-    // Проверяем, открыто ли приложение уже в установленном режиме
+    const installPage =
+      document.getElementById('installPage');
+
+    const testFrame =
+      document.getElementById('testFrame');
+
+    const installPageButton =
+      document.getElementById('installPageButton');
+
+    const installStatus =
+      document.getElementById('installStatus');
+
+    // Определяем, открыт ли PWA как установленное приложение
     function isStandalone() {
       return (
         window.matchMedia('(display-mode: standalone)').matches ||
@@ -86,65 +192,141 @@
       );
     }
 
-    // Показываем системное окно установки
-    async function showInstallPrompt() {
-      if (!deferredPrompt || promptShown || isAlreadyInstalled()) {
-        return;
-      }
+    // Проверяем, открыт ли режим установки
+    const installMode =
+      new URLSearchParams(window.location.search)
+        .get('install') === '1';
 
-      promptShown = true;
-
-      try {
-        deferredPrompt.prompt();
-
-        const result = await deferredPrompt.userChoice;
-
-        if (result.outcome === 'accepted') {
-          localStorage.setItem('trainerPwaInstalled', 'yes');
-          installButton.style.display = 'none';
-        } else {
-          // Если пользователь отказался,
-          // оставляем кнопку для повторной попытки
-          installButton.style.display = 'block';
-        }
-
-      } catch (error) {
-        console.error('Ошибка установки:', error);
-        installButton.style.display = 'block';
-      }
-
-      deferredPrompt = null;
+    // Если открыли ?install=1 —
+    // показываем специальную страницу установки
+    if (installMode) {
+      testFrame.style.display = 'none';
+      installButton.style.display = 'none';
+      installPage.style.display = 'flex';
     }
 
-    // Chrome сообщает, что приложение можно установить
+    // Браузер сообщает, что приложение можно установить
     window.addEventListener('beforeinstallprompt', (event) => {
+
       event.preventDefault();
 
       deferredPrompt = event;
 
-      // Если уже установлено — ничего не делаем
       if (isAlreadyInstalled()) {
+
+        if (installMode) {
+          installPageButton.style.display = 'none';
+          installStatus.textContent =
+            'Приложение уже установлено.';
+        }
+
         installButton.style.display = 'none';
+
         return;
       }
 
-      // Сначала пытаемся открыть окно установки автоматически
-      setTimeout(() => {
-        showInstallPrompt();
-      }, 300);
+      // В режиме установки показываем кнопку
+      if (installMode) {
+        installPageButton.style.display = 'block';
+        installStatus.textContent = '';
+      } else {
+        installButton.style.display = 'block';
+      }
     });
 
-    // Запасная кнопка установки
-    installButton.addEventListener('click', async () => {
+    // Кнопка установки на странице ?install=1
+    installPageButton.addEventListener('click', async () => {
+
       if (isAlreadyInstalled()) {
+
+        installPageButton.style.display = 'none';
+
+        installStatus.textContent =
+          'Приложение уже установлено.';
+
+        return;
+      }
+
+      if (!deferredPrompt) {
+
+        installStatus.textContent =
+          'Установка сейчас недоступна. ' +
+          'Откройте меню браузера и выберите «Установить приложение».';
+
+        return;
+      }
+
+      try {
+
+        deferredPrompt.prompt();
+
+        const result =
+          await deferredPrompt.userChoice;
+
+        if (result.outcome === 'accepted') {
+
+          localStorage.setItem(
+            'trainerPwaInstalled',
+            'yes'
+          );
+
+          installPageButton.style.display = 'none';
+
+          installStatus.textContent =
+            'Приложение устанавливается…';
+
+        } else {
+
+          installStatus.textContent =
+            'Установка отменена.';
+
+        }
+
+      } catch (error) {
+
+        console.error('Ошибка установки:', error);
+
+        installStatus.textContent =
+          'Не удалось открыть окно установки. ' +
+          'Попробуйте установить приложение через меню браузера.';
+
+      }
+
+      deferredPrompt = null;
+    });
+
+    // Обычная кнопка установки
+    installButton.addEventListener('click', async () => {
+
+      if (isAlreadyInstalled()) {
+
         alert('Приложение уже установлено');
+
         installButton.style.display = 'none';
+
         return;
       }
 
       if (deferredPrompt) {
-        promptShown = false;
-        await showInstallPrompt();
+
+        deferredPrompt.prompt();
+
+        const result =
+          await deferredPrompt.userChoice;
+
+        if (result.outcome === 'accepted') {
+
+          localStorage.setItem(
+            'trainerPwaInstalled',
+            'yes'
+          );
+
+          installButton.style.display = 'none';
+
+        }
+
+        deferredPrompt = null;
+
         return;
       }
 
@@ -154,32 +336,62 @@
       );
     });
 
-    // После успешной установки
+    // Браузер сообщил, что приложение установлено
     window.addEventListener('appinstalled', () => {
-      localStorage.setItem('trainerPwaInstalled', 'yes');
+
+      localStorage.setItem(
+        'trainerPwaInstalled',
+        'yes'
+      );
 
       deferredPrompt = null;
-      promptShown = true;
 
       installButton.style.display = 'none';
+
+      if (installMode) {
+
+        installPageButton.style.display = 'none';
+
+        installStatus.textContent =
+          'Приложение уже установлено.';
+
+      }
     });
 
-    // Если приложение уже установлено,
-    // не показываем кнопку
+    // Если приложение уже установлено
     if (isAlreadyInstalled()) {
+
       installButton.style.display = 'none';
+
+      if (installMode) {
+
+        installPageButton.style.display = 'none';
+
+        installStatus.textContent =
+          'Приложение уже установлено.';
+
+      }
     }
 
     // Service Worker
     if ('serviceWorker' in navigator) {
+
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
+
+        navigator.serviceWorker
+          .register('./sw.js')
           .catch(error => {
-            console.error('Service Worker:', error);
+            console.error(
+              'Service Worker:',
+              error
+            );
           });
+
       });
+
     }
   </script>
 
 </body>
 </html>
+```
