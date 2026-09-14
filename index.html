@@ -48,21 +48,39 @@
       installButton.style.display = 'none';
     });
 window.addEventListener('message', async (event) => {
-  
   if (!event.data || event.data.type !== 'TRAINER_PWA_INSTALL') return;
 
-  const isInstalled =
+  const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
 
- if (isInstalled || !deferredPrompt) {
-  alert('Ярлык уже установлен');
-  return;
-}
+  const wasInstalled = localStorage.getItem('trainerPwaInstalled') === 'yes';
 
-deferredPrompt.prompt();
-await deferredPrompt.userChoice;
-deferredPrompt = null;
+  if (isStandalone || wasInstalled) {
+    alert('Ярлык уже установлен');
+    return;
+  }
+
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+
+    if (result.outcome === 'accepted') {
+      localStorage.setItem('trainerPwaInstalled', 'yes');
+    }
+
+    deferredPrompt = null;
+    return;
+  }
+
+  alert('Установка ярлыка сейчас недоступна. Откройте меню браузера и выберите «Установить приложение».');
+});
+
+window.addEventListener('appinstalled', () => {
+  localStorage.setItem('trainerPwaInstalled', 'yes');
+  deferredPrompt = null;
+  installButton.style.display = 'none';
+});
     
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
