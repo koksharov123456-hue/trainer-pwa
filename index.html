@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#800000">
+  <meta name="description" content="Тренажер тестов">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <title>Тренажер тестов</title>
+  <style>
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#f3f4f6; }
+    iframe { width:100%; height:100%; border:0; display:block; }
+    #install {
+      position:fixed; right:18px; bottom:18px; z-index:10;
+      display:none; padding:12px 18px; border:0; border-radius:12px;
+      background:#800000; color:white; font:700 15px/1.2 system-ui,sans-serif;
+      box-shadow:0 8px 24px rgba(0,0,0,.22); cursor:pointer;
+    }
+    #install:hover { background:#a00000; }
+  </style>
+</head>
+<body>
+  <iframe src="https://script.google.com/macros/s/AKfycbweG0jamDG8Sc1KPuHJZQr-xSJzoBAMt__-chg6GE0SDl6EJHz6DhRbh9ckCJpRG_eTA/exec" title="Тренажер тестов"
+          allow="fullscreen"></iframe>
+  <button id="install">Установить ярлык</button>
+
+  <script>
+    let deferredPrompt = null;
+    const installButton = document.getElementById('install');
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      installButton.style.display = 'block';
+    });
+
+    installButton.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installButton.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      installButton.style.display = 'none';
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(console.error);
+      });
+    }
+  </script>
+</body>
+</html>
